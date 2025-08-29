@@ -1,0 +1,321 @@
+import subprocess as sub
+from mysql.connector import connect, Error
+from dotenv import load_dotenv
+import os
+import time as t
+import sys
+
+load_dotenv()
+print(os.name)
+config = {
+      'user': os.getenv("USER_DB"),
+      'password': os.getenv("PASSWORD_DB"),
+      'host': os.getenv("HOST_DB"),
+      'database': os.getenv("DATABASE_DB")
+    }
+def limpar_tela():
+    if os.name == 'nt':
+        os.system("cls")
+    else:
+        os.system("clear")
+limpar_tela()
+
+def setup_config_pc():
+    # Faz os Comandos no CMD
+    comando_serial_number = sub.run(['wmic','bios', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
+    comando_UUID = sub.run(['wmic', 'csproduct', 'get', 'UUID'], capture_output=True,text=True,check=True)
+    comando_serial_motherboard = sub.run(['wmic', 'baseboard', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
+    # Formata o Comando
+    serial_number = comando_serial_number.stdout.strip().split("\n")[-1].strip()
+    UUID = comando_UUID.stdout.strip().split("\n")[-1].strip()
+    Motherboard = comando_serial_motherboard.stdout.strip().split("\n")[-1].strip()
+    # Chama a busca para ver se é existente
+    resultado_existe_maquina = buscar_fk_maquina(serial_number,UUID,Motherboard)
+    if resultado_existe_maquina == []:
+        Fkescola = config_escola()
+        limpar_tela()
+        nome_maquina = input("Nomeie a Maquína Cadastrada: ")
+        inserir_maquina_a_escola(serial_number,UUID,Motherboard,Fkescola,nome_maquina)
+        FkMaquina = buscar_fk_maquina(serial_number,UUID,Motherboard)
+        FkMaquina = FkMaquina[0][0]
+        configurar_componetes_a_monitorar(FkMaquina,Fkescola)
+        Componetes_a_monitorar = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina}")
+        func_para_binario(Componetes_a_monitorar,FkMaquina,Fkescola)
+    else:
+        Fkescola = resultado_existe_maquina[0][1]
+        FkMaquina = resultado_existe_maquina[0][0]
+        Componetes_a_monitorar = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina}")
+        func_para_binario(Componetes_a_monitorar,FkMaquina,Fkescola)
+
+
+def config_escola():
+    limpar_tela()
+    print("-----------------------------------------------------")
+    print("Seu computador não está cadastrado em nenhuma escola")
+    codigo_inep_input = input("Utilize o código do Inep para cadastrar: ")
+    inep_val = validar_codigo_inep(codigo_inep_input)
+    if inep_val == []:
+        limpar_tela()
+        print("-----------------------------------------------------")
+        print("Código do INEP Invalído")
+        print("Seu computador não está cadastrado em nenhuma escola")
+        codigo_inep_input = input("Utilize o código do Inep para cadastrar: ")
+        inep_val = validar_codigo_inep(codigo_inep_input)
+    else:
+        limpar_tela()
+        print("-----------------------------------------------------")
+        print(f"Deseja cadastrar um computador na {inep_val[0][1]}")
+        operacao = input("Continuar (s / n) ").lower()
+        while operacao != 's' and operacao != 'n':
+            limpar_tela()
+            print("-----------------------------------------------------")
+            print(f"Deseja cadastrar um computador na escola {inep_val[0][1]}")
+            operacao = input("Continuar (s / n)").lower()
+        if operacao == "n":
+            config_escola()
+    codigo_acesso_input = input("Coloque o código de configuração da sua organização: ")
+    tentavivas = 3
+    codigo_vali = validar_codigo_acesso(codigo_acesso_input,codigo_inep_input)
+    while codigo_vali == []:
+        limpar_tela()
+        print(f"Código Invalído. Faltam {tentavivas} Tentativas")
+        codigo_acesso_input = input("Coloque o código de configuração da sua organização: ")
+        codigo_vali = validar_codigo_acesso(codigo_acesso_input,codigo_inep_input)
+        tentavivas = tentavivas - 1
+        if tentavivas == 0:
+            limpar_tela()
+            mensagem = "Números de Tentativas execido, Fechando o programa"
+            print(mensagem)
+            t.sleep(1)
+            limpar_tela()
+            mensagem += " ."
+            print(mensagem)
+            t.sleep(1)
+            limpar_tela()
+            mensagem += "."
+            print(mensagem)
+            t.sleep(1)
+            limpar_tela()
+            mensagem += "."
+            print(mensagem)
+            t.sleep(1)
+            sys.exit()
+    limpar_tela()
+    mensagem = "Cadastro realizado com Sucesso ."
+    print(mensagem)
+    t.sleep(1)
+    limpar_tela()
+    mensagem += " ."
+    print(mensagem)
+    t.sleep(1)
+    limpar_tela()
+    mensagem += "."
+    print(mensagem)
+    t.sleep(1)
+    limpar_tela()
+    mensagem += "."
+    print(mensagem)
+    t.sleep(1)
+    print(codigo_vali)
+    return codigo_vali[0][0]
+
+
+
+def validar_codigo_inep(codigo):
+    try:
+        db = connect(**config)
+        if db.is_connected():
+            db_info = db.server_info
+            print('Connected to MySQL server version -', db_info)
+            limpar_tela()
+            with db.cursor() as cursor:
+                query = f"SELECT * FROM safeclass.Escola WHERE Codigo_INEP = '{codigo}';"
+                cursor.execute(query)
+                resultado = cursor.fetchall() 
+                
+            cursor.close()
+            db.close()
+            return resultado
+    
+    except Error as e:
+        print('Error to connect with MySQL -', e)
+
+def validar_codigo_acesso(codigo,inep):
+    try:
+        db = connect(**config)
+        if db.is_connected():
+            db_info = db.server_info
+            print('Connected to MySQL server version -', db_info)
+            limpar_tela()
+            with db.cursor() as cursor:
+                query = f"SELECT * FROM safeclass.Escola WHERE Codigo_Config = '{codigo}' and Codigo_INEP = '{inep}';"
+                cursor.execute(query)
+                resultado = cursor.fetchall() 
+                
+            cursor.close()
+            db.close()
+            return resultado
+    
+    except Error as e:
+        print('Error to connect with MySQL -', e)
+def insert_no_banco(query):
+    try:
+        db = connect(**config)
+        if db.is_connected():
+            db_info = db.server_info
+            print('Connected to MySQL server version -', db_info)
+            limpar_tela()
+            with db.cursor() as cursor:
+                cursor.execute(query)
+                
+                db.commit()
+                print(cursor.rowcount, "registro inserido")
+            
+            cursor.close()
+            db.close()
+    
+    except Error as e:
+        print('Error to connect with MySQL -', e)
+
+def inserir_maquina_a_escola(serial_bios,UUID,serial_motherboard,fkescola,nome):
+    try:
+        db = connect(**config)
+        if db.is_connected():
+            db_info = db.server_info
+            print('Connected to MySQL server version -', db_info)
+            limpar_tela()
+            with db.cursor() as cursor:
+                query = "INSERT INTO safeclass.Maquina (IdMaquina, UUID,Serial_number_bios,Serial_motherboard,FkEscola,Nome_indetificao) VALUES (default, %s,%s,%s,%s,%s)"
+                value = (UUID,serial_bios,serial_motherboard,fkescola,nome)
+                cursor.execute(query, value)
+                
+                db.commit()
+                print(cursor.rowcount, "registro inserido")
+            
+            cursor.close()
+            db.close()
+    
+    except Error as e:
+        print('Error to connect with MySQL -', e)
+
+
+def buscar_fk_maquina(serial_bios,UUID,serial_motherboard):
+    try:
+        db = connect(**config)
+        if db.is_connected():
+            db_info = db.server_info
+            print('Connected to MySQL server version -', db_info)
+            limpar_tela()
+            with db.cursor() as cursor:
+                query = f"SELECT IdMaquina,FkEscola FROM safeclass.Maquina WHERE Serial_number_bios = '{serial_bios}' and UUID = '{UUID}' and Serial_motherboard = '{serial_motherboard}';"
+                cursor.execute(query)
+                resultado = cursor.fetchall() 
+                
+            cursor.close()
+            db.close()
+            return resultado
+    
+    except Error as e:
+        print('Error to connect with MySQL -', e) 
+
+def configurar_componetes_a_monitorar(FkMaquina,FkEscola):
+    limpar_tela()
+    print("-----------------------------------------------------------")
+    print("Olá vimos que você não configurou sua máquina")
+    monitorar_cpu_percent = input("Você deseja monitorar a porcentagem(%) de uso da CPU (s / n) \n").lower()
+    while monitorar_cpu_percent != 's' and monitorar_cpu_percent != 'n':
+        print("Opção Invalída tente novamente")
+        monitorar_cpu_percent = input("Você deseja monitorar a porcentagem(%) de uso da CPU (s / n) \n").lower()
+    monitorar_cpu_freq = input("Você deseja monitorar a Frequência(GHz) da CPU (s / n) \n").lower()
+    while monitorar_cpu_freq != 's' and monitorar_cpu_freq != 'n':
+        print("Opção Invalída tente novamente")
+        monitorar_cpu_freq = input("Você deseja monitorar a Frequência(GHz) da CPU (s / n) \n").lower()
+    monitorar_memoria_percent = input("Você deseja monitorar o uso de memória RAM(%) (s / n) \n").lower()
+    while monitorar_memoria_percent != 's' and monitorar_memoria_percent != 'n':
+        print("Opção Invalída tente novamente")
+        monitorar_memoria_percent = input("Você deseja monitorar o uso de memória RAM(%) (s / n) \n").lower()
+    monitorar_memoria_total = input("Você deseja monitorar a memória RAM total(GB) (s / n) \n").lower()
+    while monitorar_memoria_total != 's' and monitorar_memoria_total != 'n':
+        print("Opção Invalída tente novamente")
+        monitorar_memoria_total = input("Você deseja monitorar a memória RAM total(GB) (s / n) \n").lower()
+    monitorar_disco_uso = input("Você deseja monitorar o uso do Disco(GB) (s / n) \n").lower()
+    while monitorar_disco_uso != 's' and monitorar_disco_uso != 'n':
+        print("Opção Invalída tente novamente")
+        monitorar_disco_uso = input("Você deseja monitorar o uso do Disco(GB) (s / n) \n").lower()
+    monitorar_disco_livre = input("Você deseja monitorar o espaço disponível do disco(GB) (s / n) \n").lower()
+    while monitorar_disco_livre != 's' and monitorar_disco_livre != 'n':
+        print("Opção Invalída tente novamente")
+        monitorar_disco_livre = input("Você deseja monitorar o espaço disponível do disco(GB) (s / n) \n").lower()
+    monitorar_disco_total = input("Você deseja monitorar o espaço total do disco(GB) (s / n) \n").lower()
+    while monitorar_disco_total != 's' and monitorar_disco_total != 'n':
+        print("Opção Invalída tente novamente")
+    monitorar_disco_total = input("Você deseja monitorar o espaço total do disco(GB) (s / n) \n").lower()
+    limpar_tela()
+    print("-----------------------------------------------------------")
+    print("Escolha do monitoramento")
+    print(f"Porcentagem de uso da CPU(%): {monitorar_cpu_percent}\nFrequência de uso da CPU(GHz): {monitorar_cpu_freq}\nUso da Memória RAM(%): {monitorar_memoria_percent}\nMemória RAM Total(GB): {monitorar_memoria_total}\nUso do disco(GB): {monitorar_disco_uso}\nEspaço restante do disco(GB): {monitorar_disco_livre}\nEspaço do Disco(GB): {monitorar_disco_total}")
+    t.sleep(2)
+    acao = input("Confirma todos os monitoramentos ( s / n)  ").lower()
+    while acao != 's' and acao != 'n':
+        limpar_tela()
+        print("-----------------------------------------------------------")
+        print(f"Porcentagem de uso da CPU(%): {monitorar_cpu_percent}\nFrequência de uso da CPU(GHz): {monitorar_cpu_freq}\nUso da Memória RAM(%): {monitorar_memoria_percent}\nMemória RAM Total(GB): {monitorar_memoria_total}\nUso do disco(GB): {monitorar_disco_uso}\nEspaço restante do disco(GB): {monitorar_disco_livre}\nEspaço do Disco(GB): {monitorar_disco_total}")
+        print("Opção Invalída tente novamente")
+        acao = input("Confirma todos os monitoramentos ( s / n)  ").lower()
+    if acao == 's':
+        if monitorar_cpu_percent == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},1,{FkEscola});"
+            insert_no_banco(query)
+        if monitorar_cpu_freq == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},2,{FkEscola});"
+            insert_no_banco(query)
+        if monitorar_memoria_percent == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},3,{FkEscola});"
+            insert_no_banco(query)
+        if monitorar_memoria_total == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},4,{FkEscola});"
+            insert_no_banco(query)
+        if monitorar_disco_uso == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},5,{FkEscola});"
+            insert_no_banco(query)
+        if monitorar_disco_livre == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},6,{FkEscola});"
+            insert_no_banco(query)
+        if monitorar_disco_total == "s":
+            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},7,{FkEscola});"
+            insert_no_banco(query)
+        limpar_tela()
+        
+    else:
+        configurar_componetes_a_monitorar(FkMaquina,FkEscola)
+
+def select_generico(query):
+    try:
+        db = connect(**config)
+        if db.is_connected():
+            db_info = db.server_info
+            print('Connected to MySQL server version -', db_info)
+            limpar_tela()
+            with db.cursor() as cursor:
+                cursor.execute(query)
+                resultado = cursor.fetchall() 
+                
+            cursor.close()
+            db.close()
+            return resultado
+    
+    except Error as e:
+        print('Error to connect with MySQL -', e) 
+
+def func_para_binario(FkComponentes,FkMaquina,FkEscola):
+    componentes = [item[0] for item in FkComponentes]
+    binario = [0,0,0,0,0,0,0]
+    contador = 0;
+    while contador < len(componentes):
+        binario[componentes[contador]-1] = 1
+        contador += 1
+    binario.reverse()
+    print(binario)
+
+    
+setup_config_pc()
