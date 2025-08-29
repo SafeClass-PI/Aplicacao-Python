@@ -1,3 +1,4 @@
+import psutil as p
 import subprocess as sub
 from mysql.connector import connect, Error
 from dotenv import load_dotenv
@@ -6,7 +7,6 @@ import time as t
 import sys
 
 load_dotenv()
-print(os.name)
 config = {
       'user': os.getenv("USER_DB"),
       'password': os.getenv("PASSWORD_DB"),
@@ -34,18 +34,16 @@ def setup_config_pc():
     if resultado_existe_maquina == []:
         Fkescola = config_escola()
         limpar_tela()
-        nome_maquina = input("Nomeie a Maquína Cadastrada: ")
+        nome_maquina = input("Nomeie a Máquina Cadastrada: ")
         inserir_maquina_a_escola(serial_number,UUID,Motherboard,Fkescola,nome_maquina)
         FkMaquina = buscar_fk_maquina(serial_number,UUID,Motherboard)
         FkMaquina = FkMaquina[0][0]
         configurar_componetes_a_monitorar(FkMaquina,Fkescola)
-        Componetes_a_monitorar = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina}")
-        func_para_binario(Componetes_a_monitorar,FkMaquina,Fkescola)
+        
     else:
         Fkescola = resultado_existe_maquina[0][1]
         FkMaquina = resultado_existe_maquina[0][0]
-        Componetes_a_monitorar = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina}")
-        func_para_binario(Componetes_a_monitorar,FkMaquina,Fkescola)
+        FkComponetes = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina}")
 
 
 def config_escola():
@@ -76,11 +74,13 @@ def config_escola():
     codigo_acesso_input = input("Coloque o código de configuração da sua organização: ")
     tentavivas = 3
     codigo_vali = validar_codigo_acesso(codigo_acesso_input,codigo_inep_input)
-    while codigo_vali == []:
+    while True:
         limpar_tela()
         print(f"Código Invalído. Faltam {tentavivas} Tentativas")
         codigo_acesso_input = input("Coloque o código de configuração da sua organização: ")
         codigo_vali = validar_codigo_acesso(codigo_acesso_input,codigo_inep_input)
+        if codigo_vali != []:
+            break
         tentavivas = tentavivas - 1
         if tentavivas == 0:
             limpar_tela()
@@ -88,7 +88,7 @@ def config_escola():
             print(mensagem)
             t.sleep(1)
             limpar_tela()
-            mensagem += " ."
+            mensagem += "."
             print(mensagem)
             t.sleep(1)
             limpar_tela()
@@ -307,15 +307,93 @@ def select_generico(query):
     except Error as e:
         print('Error to connect with MySQL -', e) 
 
-def func_para_binario(FkComponentes,FkMaquina,FkEscola):
+def func_para_binario(FkComponentes):
     componentes = [item[0] for item in FkComponentes]
     binario = [0,0,0,0,0,0,0]
     contador = 0;
     while contador < len(componentes):
         binario[componentes[contador]-1] = 1
         contador += 1
-    binario.reverse()
-    print(binario)
+    return binario
 
     
+
 setup_config_pc()
+comando_serial_number = sub.run(['wmic','bios', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
+comando_UUID = sub.run(['wmic', 'csproduct', 'get', 'UUID'], capture_output=True,text=True,check=True)
+comando_serial_motherboard = sub.run(['wmic', 'baseboard', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
+# Formata o Comando
+serial_number = comando_serial_number.stdout.strip().split("\n")[-1].strip()
+UUID = comando_UUID.stdout.strip().split("\n")[-1].strip()
+Motherboard = comando_serial_motherboard.stdout.strip().split("\n")[-1].strip()
+Fkescola = buscar_fk_maquina(serial_number,UUID,Motherboard)
+FkMaquina = buscar_fk_maquina(serial_number,UUID,Motherboard)
+Fkescola = Fkescola[0][1]
+FkMaquina = FkMaquina[0][0]
+FkComponetes = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina};")
+binario = func_para_binario(FkComponetes)
+
+
+
+habilita_usoCPU = False
+habilita_freqCPU = False
+habilita_Mem_used = False
+habilita_Mem_total = False
+habilita_usoDisk = False
+habilita_LivreDisk = False
+habilita_Disco_total = False
+
+if binario[0] == 1:
+    habilita_usoCPU = True
+if binario[1] == 1:
+    habilita_freqCPU = True
+if binario[2] == 1:
+    habilita_Mem_used = True
+if binario[3] == 1:
+    habilita_Mem_total = True
+if binario[4] == 1:
+    habilita_usoDisk = True
+if binario[5] == 1:
+    habilita_LivreDisk = True
+if binario[6] == 1:
+    habilita_Disco_total = True
+
+
+def captura():
+    query = "INSERT INTO safeclass.Leitura (FkEscola,FkMaquina,FkComponente,Medida) VALUES"
+    if habilita_usoCPU == True:
+        usoCPU = p.cpu_percent(interval=1, percpu=False)
+        query += f"({Fkescola},{FkMaquina},1,'{usoCPU}'),"
+    if habilita_freqCPU == True:
+        freqCPU = round((p.cpu_freq(percpu=False).current)/1000,2)
+        query += f"({Fkescola},{FkMaquina},2,'{freqCPU}'),"
+    if habilita_Mem_used == True:
+        Mem_used = p.virtual_memory().percent
+        query += f"({Fkescola},{FkMaquina},3,'{Mem_used}'),"
+    if habilita_Mem_total == True:
+        Mem_total = round(p.virtual_memory().total / (1024 ** 3),2)
+        query += f"({Fkescola},{FkMaquina},4,'{Mem_total}'),"
+    if habilita_usoDisk == True:
+        usoDisk = round(p.disk_usage("C:/").used/ (1024**3),2)
+        query += f"({Fkescola},{FkMaquina},5,'{usoDisk}'),"
+    if habilita_LivreDisk == True:
+        LivreDisk = round(p.disk_usage("C:/").free/ (1024**3),2)
+        query += f"({Fkescola},{FkMaquina},6,'{LivreDisk}'),"
+    if habilita_Disco_total == True:
+        usoDisk = round(p.disk_usage("C:/").used/ (1024**3),2)
+        LivreDisk = round(p.disk_usage("C:/").free/ (1024**3),2)
+        Disco_total = usoDisk + LivreDisk
+        query += f"({Fkescola},{FkMaquina},7,'{Disco_total}'),"
+    if query.endswith(","):
+        query = query[:-1] + ";"
+    else:
+        configurar_componetes_a_monitorar(FkMaquina,Fkescola)
+    insert_no_banco(query)
+    if habilita_usoCPU == True:
+        t.sleep(9)
+    else:
+        t.sleep(10)
+    captura()
+    
+
+captura()
