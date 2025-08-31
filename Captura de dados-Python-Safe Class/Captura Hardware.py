@@ -73,8 +73,11 @@ def config_escola():
             config_escola()
     codigo_acesso_input = input("Coloque o código de configuração da sua organização: ")
     tentavivas = 3
-    codigo_vali = validar_codigo_acesso(codigo_acesso_input,codigo_inep_input)
     while True:
+        if tentavivas == 3:
+            codigo_vali = validar_codigo_acesso(codigo_acesso_input,codigo_inep_input)
+            if codigo_vali != []:
+                break
         limpar_tela()
         print(f"Código Invalído. Faltam {tentavivas} Tentativas")
         codigo_acesso_input = input("Coloque o código de configuração da sua organização: ")
@@ -105,7 +108,7 @@ def config_escola():
     print(mensagem)
     t.sleep(1)
     limpar_tela()
-    mensagem += " ."
+    mensagem += "."
     print(mensagem)
     t.sleep(1)
     limpar_tela()

@@ -31,6 +31,12 @@ read -p "As credenciais estão corretas? (S/N) " INICIAR_API
 echo ''
 if [ $INICIAR_API = 'S' ]; then 
     echo '.env Criado'
+    echo 'Instalando as bibliotecas'
+    python -m venv venv-ambiente-Captura
+    venv-ambiente-Captura\Scripts\activate
+    pip install python-dotenv
+    pip install mysql-connector-python
+    pip install psutil
 else 
     echo 'RECONFIGURE AS CREDENCIAIS...'
     ./init.sh
