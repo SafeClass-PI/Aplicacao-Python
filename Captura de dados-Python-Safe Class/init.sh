@@ -31,12 +31,21 @@ read -p "As credenciais estão corretas? (S/N) " INICIAR_API
 echo ''
 if [ $INICIAR_API = 'S' ]; then 
     echo '.env Criado'
-    echo 'Instalando as bibliotecas'
-    python -m venv venv-ambiente-Captura
-    venv-ambiente-Captura\Scripts\activate
-    pip install python-dotenv
-    pip install mysql-connector-python
-    pip install psutil
+    read -p "Seu SO é Linux(S/N): " SO
+    if [ "$SO" = 'S' ]; then
+        echo 'Instalando as bibliotecas no Linux'
+        python3 -m venv venv-ambiente-Captura
+        source venv-ambiente-Captura/bin/activate
+        pip install -r requirements.txt
+    else
+        echo 'Instalando as bibliotecas no Windows'
+        python -m venv venv-ambiente-Captura
+        ./venv-ambiente-Captura/Scripts/python.exe -m pip install -r requirements.txt
+        read -p "Deseja iniciar o programa(S/N): " START
+        if [ "$START" = 'S' ]; then
+            ./venv-ambiente-Captura/Scripts/python.exe "Captura Hardware.py"
+        fi
+    fi
 else 
     echo 'RECONFIGURE AS CREDENCIAIS...'
     ./init.sh
