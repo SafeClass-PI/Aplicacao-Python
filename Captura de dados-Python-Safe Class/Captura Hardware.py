@@ -22,11 +22,12 @@ limpar_tela()
 
 def setup_config_pc():
     # Faz os Comandos no CMD
-    comando_serial_number = sub.run(['wmic','bios', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
-    comando_UUID = sub.run(['wmic', 'csproduct', 'get', 'UUID'], capture_output=True,text=True,check=True)
-    comando_serial_motherboard = sub.run(['wmic', 'baseboard', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
+    serial_number = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_BIOS).SerialNumber"], capture_output=True, text=True, check=True)
+    comando_UUID = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_ComputerSystemProduct).UUID"], capture_output=True, text=True, check=True)
+    comando_serial_motherboard = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_BaseBoard).SerialNumber"], capture_output=True, text=True, check=True)
+
     # Formata o Comando
-    serial_number = comando_serial_number.stdout.strip().split("\n")[-1].strip()
+    serial_number = serial_number.stdout.strip().split("\n")[-1].strip()
     UUID = comando_UUID.stdout.strip().split("\n")[-1].strip()
     Motherboard = comando_serial_motherboard.stdout.strip().split("\n")[-1].strip()
     # Chama a busca para ver se é existente
@@ -317,11 +318,11 @@ def func_para_binario(FkComponentes):
     
 
 setup_config_pc()
-comando_serial_number = sub.run(['wmic','bios', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
-comando_UUID = sub.run(['wmic', 'csproduct', 'get', 'UUID'], capture_output=True,text=True,check=True)
-comando_serial_motherboard = sub.run(['wmic', 'baseboard', 'get', 'serialnumber'], capture_output=True,text=True,check=True)
+serial_number = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_BIOS).SerialNumber"], capture_output=True, text=True, check=True)
+comando_UUID = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_ComputerSystemProduct).UUID"], capture_output=True, text=True, check=True)
+comando_serial_motherboard = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_BaseBoard).SerialNumber"], capture_output=True, text=True, check=True)
 # Formata o Comando
-serial_number = comando_serial_number.stdout.strip().split("\n")[-1].strip()
+serial_number = serial_number.stdout.strip().split("\n")[-1].strip()
 UUID = comando_UUID.stdout.strip().split("\n")[-1].strip()
 Motherboard = comando_serial_motherboard.stdout.strip().split("\n")[-1].strip()
 Fkescola = buscar_fk_maquina(serial_number,UUID,Motherboard)
