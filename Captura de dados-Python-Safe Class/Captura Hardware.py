@@ -39,11 +39,6 @@ def setup_config_pc():
         FkMaquina = buscar_fk_maquina(serial_number,UUID,Motherboard)
         FkMaquina = FkMaquina[0][0]
         configurar_componetes_a_monitorar(FkMaquina,Fkescola)
-        
-    else:
-        Fkescola = resultado_existe_maquina[0][1]
-        FkMaquina = resultado_existe_maquina[0][0]
-        FkComponetes = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina}")
 
 
 def config_escola():
@@ -262,7 +257,7 @@ def configurar_componetes_a_monitorar(FkMaquina,FkEscola):
     while acao != 's' and acao != 'n':
         limpar_tela()
         print("-----------------------------------------------------------")
-        print(f"Porcentagem de uso da CPU(%): {monitorar_cpu_percent}\nFrequência de uso da CPU(GHz): {monitorar_cpu_freq}\nUso da Memória RAM(%): {monitorar_memoria_percent}\nMemória RAM Total(GB): {monitorar_memoria_total}\nUso do disco(GB): {monitorar_disco_uso}\nEspaço restante do disco(GB): {monitorar_disco_livre}\nEspaço do Disco(GB): {monitorar_disco_total}")
+        print(f"Porcentagem de uso da CPU(%): {monitorar_cpu_percent}\nFrequência de uso da CPU(GHz): {monitorar_cpu_freq}\nUso da Memória RAM(%): {monitorar_memoria_percent}\nMemória RAM Total(GB): {monitorar_memoria_total}\nUso do disco(GB): {monitorar_disco_uso}\nEspaço restante do disco(GB): {monitorar_disco_livre}\nEspaço total do disco(GB): {monitorar_disco_total}")
         print("Opção Invalída tente novamente")
         acao = input("Confirma todos os monitoramentos ( s / n)  ").lower()
     if acao == 's':
