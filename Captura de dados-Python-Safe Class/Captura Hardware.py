@@ -128,7 +128,7 @@ def validar_codigo_inep(codigo):
             print('Connected to MySQL server version -', db_info)
             limpar_tela()
             with db.cursor() as cursor:
-                query = f"SELECT * FROM safeclass.Escola WHERE Codigo_INEP = '{codigo}';"
+                query = f"SELECT * FROM safeClass.Escola WHERE Codigo_INEP = '{codigo}';"
                 cursor.execute(query)
                 resultado = cursor.fetchall() 
                 
@@ -147,7 +147,7 @@ def validar_codigo_acesso(codigo,inep):
             print('Connected to MySQL server version -', db_info)
             limpar_tela()
             with db.cursor() as cursor:
-                query = f"SELECT * FROM safeclass.Escola WHERE Codigo_Config = '{codigo}' and Codigo_INEP = '{inep}';"
+                query = f"SELECT * FROM safeClass.Escola WHERE Codigo_Config = '{codigo}' and Codigo_INEP = '{inep}';"
                 cursor.execute(query)
                 resultado = cursor.fetchall() 
                 
@@ -184,7 +184,7 @@ def inserir_maquina_a_escola(serial_bios,UUID,serial_motherboard,fkescola,nome):
             print('Connected to MySQL server version -', db_info)
             limpar_tela()
             with db.cursor() as cursor:
-                query = "INSERT INTO safeclass.Maquina (IdMaquina, UUID,Serial_number_bios,Serial_motherboard,FkEscola,Nome_indetificao) VALUES (default, %s,%s,%s,%s,%s)"
+                query = "INSERT INTO safeClass.Maquina (IdMaquina, UUID,Serial_number_bios,Serial_motherboard,FkEscola,Nome_indetificao) VALUES (default, %s,%s,%s,%s,%s)"
                 value = (UUID,serial_bios,serial_motherboard,fkescola,nome)
                 cursor.execute(query, value)
                 
@@ -206,7 +206,7 @@ def buscar_fk_maquina(serial_bios,UUID,serial_motherboard):
             print('Connected to MySQL server version -', db_info)
             limpar_tela()
             with db.cursor() as cursor:
-                query = f"SELECT IdMaquina,FkEscola FROM safeclass.Maquina WHERE Serial_number_bios = '{serial_bios}' and UUID = '{UUID}' and Serial_motherboard = '{serial_motherboard}';"
+                query = f"SELECT IdMaquina,FkEscola FROM safeClass.Maquina WHERE Serial_number_bios = '{serial_bios}' and UUID = '{UUID}' and Serial_motherboard = '{serial_motherboard}';"
                 cursor.execute(query)
                 resultado = cursor.fetchall() 
                 
@@ -263,25 +263,25 @@ def configurar_componetes_a_monitorar(FkMaquina,FkEscola):
         acao = input("Confirma todos os monitoramentos ( s / n)  ").lower()
     if acao == 's':
         if monitorar_cpu_percent == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},1,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},1,{FkEscola});"
             insert_no_banco(query)
         if monitorar_cpu_freq == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},2,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},2,{FkEscola});"
             insert_no_banco(query)
         if monitorar_memoria_percent == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},3,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},3,{FkEscola});"
             insert_no_banco(query)
         if monitorar_memoria_total == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},4,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},4,{FkEscola});"
             insert_no_banco(query)
         if monitorar_disco_uso == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},5,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},5,{FkEscola});"
             insert_no_banco(query)
         if monitorar_disco_livre == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},6,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},6,{FkEscola});"
             insert_no_banco(query)
         if monitorar_disco_total == "s":
-            query = f"INSERT INTO safeclass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},7,{FkEscola});"
+            query = f"INSERT INTO safeClass.Maquina_monitoramento (FkMaquina,FkComponente,FkEscola) VALUES ({FkMaquina},7,{FkEscola});"
             insert_no_banco(query)
         limpar_tela()
         
@@ -317,6 +317,7 @@ def func_para_binario(FkComponentes):
 
     
 
+
 setup_config_pc()
 serial_number = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_BIOS).SerialNumber"], capture_output=True, text=True, check=True)
 comando_UUID = sub.run(["powershell", "-Command", "(Get-CimInstance Win32_ComputerSystemProduct).UUID"], capture_output=True, text=True, check=True)
@@ -329,7 +330,7 @@ Fkescola = buscar_fk_maquina(serial_number,UUID,Motherboard)
 FkMaquina = buscar_fk_maquina(serial_number,UUID,Motherboard)
 Fkescola = Fkescola[0][1]
 FkMaquina = FkMaquina[0][0]
-FkComponetes = select_generico(f"SELECT FkComponente FROM safeclass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina};")
+FkComponetes = select_generico(f"SELECT FkComponente FROM safeClass.Maquina_monitoramento WHERE FkEscola = {Fkescola} AND FkMaquina = {FkMaquina};")
 binario = func_para_binario(FkComponetes)
 
 
@@ -359,7 +360,7 @@ if binario[6] == 1:
 
 
 def captura():
-    query = "INSERT INTO safeclass.Leitura (FkEscola,FkMaquina,FkComponente,Medida) VALUES"
+    query = "INSERT INTO safeClass.Leitura (FkEscola,FkMaquina,FkComponente,Medida) VALUES"
     if habilita_usoCPU == True:
         usoCPU = p.cpu_percent(interval=1, percpu=False)
         query += f"({Fkescola},{FkMaquina},1,'{usoCPU}'),"
