@@ -98,7 +98,8 @@ while True:
     if resposta_menu1 == "1":
         maquinas_cadastradas = selecionar(f"SELECT a.Nome_indetificao FROM Escola join Maquina as a on Escola.IdEscola = a. FkEscola WHERE Codigo_INEP = '{inep}' and Codigo_Config = '{senha}';")
         if len(maquinas_cadastradas) == 0:
-            print("Nenhuma maquina cadastrada nessa escola!")
+            print("\n\nNenhuma maquina cadastrada nessa escola!")
+            t.sleep(2)
             continue
         else:
             print("\n Maquinas Cadastrada(s):")
@@ -215,7 +216,7 @@ while True:
             elif resp_dados == "4":
                 Dados = selecionar(f'select c.Metrica as \
 "componente",e.Medida,c.Unidade_medida as "UM", e.Data_captura from Escola as a\
- join Leitura as e  on a.IdEscola = e.Fkescola \
+join Leitura as e  on a.IdEscola = e.Fkescola \
 	join Maquina as b on b.idMaquina = e.Fkmaquina\
 		join Componentes_a_monitorar as c on c.idComponente = e.FkComponente\
 			where b.Nome_indetificao = "{resp_maquina}" and c.Metrica = "Espaço do Disco" order by e.Data_captura desc;')
