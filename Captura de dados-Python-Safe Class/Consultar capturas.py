@@ -251,6 +251,12 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                     else:
                         print("Comando não reconhecido, reiniciando programa!")
                         continue
+            
+            else:
+                print("Comando Invalido")
+                t.sleep(1)
+                print("Reiniciando...")
+
 
     elif resposta_menu1 == "2":       
         maquinas_cadastradas = selecionar(f"SELECT a.IdMaquina FROM Escola join Maquina as a on Escola.IdEscola = a. FkEscola WHERE Codigo_INEP = '{inep}' and Codigo_Config = '{senha}';")
