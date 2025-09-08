@@ -10,6 +10,11 @@ config = {
         'host': os.getenv("HOST_DB"),
         'database': os.getenv("DATABASE_DB")
         }
+def limpar_tela():
+    if os.name == 'nt':
+        os.system("cls")
+    else:
+        os.system("clear")
 def selecionar(query):
 
 
@@ -64,14 +69,14 @@ def validarcodigo(codigo_configuracao, inep):
         print('Error to connect with MySQL -', e) 
 
 while True:
-    os.system("cls")
+    limpar_tela()
    
     inep = input("insira o Codigo Inep: ")
     validacao1 = validarinep(inep)
     if validacao1 == False:
         print("\ncodigo INEP não reconhecido!\n")
         t.sleep(1)
-        os.system("cls")
+        limpar_tela()
         continue
         
     else:
@@ -81,11 +86,11 @@ while True:
     if validacao2 == False:
         print("\nCodigo de Confirmação incorreto\n")
         t.sleep(2)
-        os.system("cls")
+        limpar_tela()
         continue
     print("Acesso realizado!")
     t.sleep(2)
-    os.system("cls")
+    limpar_tela()
     print(f"\n|=================== M E N U ===================| \n\
 | {validacao2[0][1]} \n\
 |-----------------------------------------------|") 
@@ -126,9 +131,9 @@ while True:
                     print("Sem dados para esse id")
                     t.sleep(2)
                     print("Reiniciando sistema")
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -159,9 +164,9 @@ while True:
                     t.sleep(2)
                     print("Reiniciando Sistema.")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -192,9 +197,9 @@ while True:
                     t.sleep(2)
                     print("Reiniciando Sistema.")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA COM ID = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -225,9 +230,9 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                     t.sleep(2)
                     print("Reiniciando Sistema.")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA COM ID = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -277,9 +282,9 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                 if len(Dados) == 0:
                     print("Sem dados para esse id")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA COM ID = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -310,9 +315,9 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                     t.sleep(2)
                     print("Reiniciando Sistema.")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA COM ID = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -343,9 +348,9 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                     t.sleep(2)
                     print("Reiniciando Sistema.")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA COM ID = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -376,9 +381,9 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                     t.sleep(2)
                     print("Reiniciando Sistema.")
                     t.sleep(2)
-                    os.system("cls")
+                    limpar_tela()
                 else:
-                    os.system("cls")
+                    limpar_tela()
                     print (f"\n\n| DADOS DA MAQUINA COM ID = {resp_maquina}\n")
                     t.sleep(2)
                     i = 0
@@ -397,6 +402,10 @@ join Leitura as e  on a.IdEscola = e.Fkescola \
                     else:
                         print("Comando não reconhecido, reiniciando programa!")
                         continue
+            else: 
+                print("Comando Invalido")
+                t.sleep(1)
+                print("Reiniciando...")
     else:
         print("Comando Invalido")
         t.sleep(1)
