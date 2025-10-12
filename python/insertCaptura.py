@@ -14,7 +14,8 @@ config = {
       'user': os.getenv("USER"),
       'password': os.getenv("PASSWORD"),
       'host': os.getenv("HOST"),
-      'database': os.getenv("DATABASE")
+      'database': os.getenv("DATABASE"),
+      'port': int(os.getenv("PORT", 3306))
     }
 
 def inserir_dados(porcentagem, memoria_GB_free, memoria_usada_GB, disco_percent, disco_livre_gb, disco_usado_formatado,):
