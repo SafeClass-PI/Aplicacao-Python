@@ -18,32 +18,37 @@ config = {
       'port': int(os.getenv("PORT", 3306))
     }
 
-def inserir_dados(porcentagem, memoria_GB_free, memoria_usada_GB, disco_percent, disco_livre_gb, disco_usado_formatado,):
-    index_cpu = 3
-    index_mem = 1
-    index_disco = 2
+def inserir_dados(porcentagem, memoria_GB_free, memoria_usada_GB, disco_percent, disco_livre_gb, disco_usado_formatado):
     try:
         db = connect(**config)
         if db.is_connected():
-            db_info = db.server_info
-
             with db.cursor() as cursor:
-                if index_cpu == 3:
-                 query = "INSERT INTO safeclass.captura (fkComponente, porcentagemDeUso, dtCaptura) VALUES (%s, %s, %s)"
-                 value = (index_cpu, porcentagem, datetime.datetime.now())
-                if index_mem == 1:
-                 query = "INSERT INTO safeclass.captura (fkComponente, gbLivre, gbEmUso, dtCaptura) VALUES (%s, %s, %s, %s)"
-                 value = (index_mem, memoria_GB_free, memoria_usada_GB, datetime.datetime.now())
-                if index_disco == 2:
-                 query = "INSERT INTO safeclass .captura (fkComponente, gbLivre, gbEmUso, porcentagemDeUso,dtCaptura) VALUES (%s, %s, %s, %s, %s)"
-                 value = (index_disco,  disco_livre_gb, disco_usado_formatado, disco_percent, datetime.datetime.now())
-                cursor.execute(query, value)
-                   
-                db.commit()    
-            db.close()
-   
+
+                # CPU
+                cursor.execute("""
+                    INSERT INTO safeclass.captura (fkComponente, porcentagemDeUso, dtCaptura)
+                    VALUES (%s, %s, %s)
+                """, (3, porcentagem, datetime.datetime.now()))
+
+                # Memória
+                cursor.execute("""
+                    INSERT INTO safeclass.captura (fkComponente, gbLivre, gbEmUso, dtCaptura)
+                    VALUES (%s, %s, %s, %s)
+                """, (1, memoria_GB_free, memoria_usada_GB, datetime.datetime.now()))
+
+                # Disco
+                cursor.execute("""
+                    INSERT INTO safeclass.captura (fkComponente, gbLivre, gbEmUso, porcentagemDeUso, dtCaptura)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (2, disco_livre_gb, disco_usado_formatado, disco_percent, datetime.datetime.now()))
+
+                db.commit()
+
+        db.close()
+        print("✅ Inserções concluídas!")
+
     except Error as e:
-        print('Error to connect with MySQL -', e)
+        print('❌ Erro ao conectar ou inserir no MySQL:', e)
 
 while True:
  
