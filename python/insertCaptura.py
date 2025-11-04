@@ -86,14 +86,14 @@ while True:
     ]
 
     print("""
-╔════════════════════════════════════════════╗
-║                                            ║
-║     ✅ DADOS INSERIDOS COM SUCESSO!        ║
-║                                            ║
-║   Os dados foram gravados no banco de      ║
-║  forma segura e o sistema foi atualizado.  ║
-╚════════════════════════════════════════════╝
-""")
+    ╔════════════════════════════════════════════╗
+    ║                                            ║
+    ║     ✅ DADOS INSERIDOS COM SUCESSO!       ║
+    ║                                            ║
+    ║   Os dados foram gravados no banco de      ║
+    ║  forma segura e o sistema foi atualizado.  ║
+    ╚════════════════════════════════════════════╝
+    """)
 
 
     print(tabulate(captura, headers=["Componente", "Valor"], tablefmt="fancy_grid"))
