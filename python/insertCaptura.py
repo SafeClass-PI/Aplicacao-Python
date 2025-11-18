@@ -18,7 +18,7 @@ config = {
       'port': int(os.getenv("PORT", 3306))
     }
 
-def inserir_dados(porcentagem, memoria_GB_free, memoria_usada_GB, disco_percent, disco_livre_gb, disco_usado_formatado):
+def inserir_dados(porcentagem, memoria_usada_GB, disco_percent):
     try:
         db = connect(**config)
         if db.is_connected():
@@ -26,21 +26,21 @@ def inserir_dados(porcentagem, memoria_GB_free, memoria_usada_GB, disco_percent,
 
                 # CPU
                 cursor.execute("""
-                    INSERT INTO safeclass.captura (fkComponente, porcentagemDeUso, dtCaptura)
+                    INSERT INTO safeclass.captura (fkComponente, registro, dtCaptura)
                     VALUES (%s, %s, %s)
                 """, (3, porcentagem, datetime.datetime.now()))
 
                 # Memória
                 cursor.execute("""
-                    INSERT INTO safeclass.captura (fkComponente, gbLivre, gbEmUso, dtCaptura)
-                    VALUES (%s, %s, %s, %s)
-                """, (1, memoria_GB_free, memoria_usada_GB, datetime.datetime.now()))
+                    INSERT INTO safeclass.captura (fkComponente, registro, dtCaptura)
+                    VALUES (%s, %s, %s)
+                """, (1, memoria_usada_GB, datetime.datetime.now()))
 
                 # Disco
                 cursor.execute("""
-                    INSERT INTO safeclass.captura (fkComponente, gbLivre, gbEmUso, porcentagemDeUso, dtCaptura)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (2, disco_livre_gb, disco_usado_formatado, disco_percent, datetime.datetime.now()))
+                    INSERT INTO safeclass.captura (fkComponente, registro, dtCaptura)
+                    VALUES (%s, %s, %s)
+                """, (2, disco_percent, datetime.datetime.now()))
 
                 db.commit()
 
@@ -83,11 +83,8 @@ while True:
     captura = [
         ["Hostname", dono_maquina],
         ["CPU % (USO)", f"{porcentagem}%"],
-        ["Memória Livre (GB)", f"{memoria_GB_free:.2f} GB"],
         ["Memória em Uso (GB)", f"{memoria_formatada_em_uso} GB"],
-        ["Disco % (USO)", f"{disco_percent:.1f}%"],
-        ["Disco Livre (GB)", f"{disco_livre_gb:.2f} GB"],
-        ["Disco em Uso (GB)", f"{disco_usado_formatado} GB"]
+        ["Disco % (USO)", f"{disco_percent:.1f}%"]
     ]
 
     print("""
@@ -103,7 +100,7 @@ while True:
 
     print(tabulate(captura, headers=["Componente", "Valor"], tablefmt="fancy_grid"))
     
-    inserir_dados(porcentagem, memoria_GB_free, memoria_usada_GB, disco_percent, disco_livre_gb, disco_usado_formatado,)
+    inserir_dados(porcentagem, memoria_usada_GB, disco_percent)
 
 
     time.sleep(4)
