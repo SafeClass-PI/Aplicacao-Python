@@ -7,7 +7,6 @@ import time
 import platform
 from tabulate import tabulate
 
-
 load_dotenv()
 
 config = {
@@ -51,34 +50,24 @@ def inserir_dados(porcentagem, memoria_usada_GB, disco_percent):
         print('❌ Erro ao conectar ou inserir no MySQL:', e)
 
 while True:
- 
- # HOSTNAME DA MAQUINA
+     # Hostname da máquina
     dono_maquina = platform.node()
 
-# DADOS DA MEMORIA
-  
-
-    memoria = p.virtual_memory()  # Captura todas as métricas da memória
-    memoria_total_GB = memoria.total / (1024**3)  # Memória total em GB
-    memoria_GB_free = memoria.available / (1024**3)  # Memória livre em GB
-    memoria_usada_GB = memoria_total_GB - memoria_GB_free  # Memória usada em GB
-    memoria_formatada_em_uso = f'{memoria_usada_GB:.2f}'  # Formata em 2 casas decimais
+    # Dados de memória ram
+    memoria = p.virtual_memory()  
+    memoria_total_GB = memoria.total / (1024**3) 
+    memoria_GB_free = memoria.available / (1024**3) 
+    memoria_usada_GB = memoria_total_GB - memoria_GB_free 
+    memoria_formatada_em_uso = f'{memoria_usada_GB:.2f}'
 
 
-# DADOS DO DISCO
-
-    disco_objeto = p.disk_usage('/')  # Captura o uso do disco da partição raiz '/'
-    disco_percent = disco_objeto.percent  # Porcentagem de uso do disco
-    disco_livre_gb = disco_objeto.free / (1024**3)  # Espaço livre em GB
-    disco_usado_gb = (disco_objeto.total - disco_objeto.free) / (1024**3)  # Espaço usado em GB
-    disco_usado_formatado = f'{disco_usado_gb:.2f}'  # Formata em 2 casas decimais
+    # Dados do disco
+    disco_objeto = p.disk_usage('/')
+    disco_percent = disco_objeto.percent  
 
 
-# dados de cpu
+    # Dados de cpu
     porcentagem = p.cpu_percent(interval=1, percpu=False)
-
-
-    
 
     captura = [
         ["Hostname", dono_maquina],
@@ -103,4 +92,4 @@ while True:
     inserir_dados(porcentagem, memoria_usada_GB, disco_percent)
 
 
-    time.sleep(4)
+    time.sleep(1)
