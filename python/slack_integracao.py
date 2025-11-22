@@ -18,8 +18,8 @@ config = {
 }
 
 # Tirar quando der clone
-# SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN") 
-# slack_client = WebClient(token=SLACK_BOT_TOKEN) if SLACK_BOT_TOKEN else None
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN") 
+slack_client = WebClient(token=SLACK_BOT_TOKEN) if SLACK_BOT_TOKEN else None
 
 # Buscar apenas UM alerta não enviado
 def pegar_um_alerta_nao_enviado():
