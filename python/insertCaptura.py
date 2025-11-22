@@ -7,91 +7,185 @@ import time
 import platform
 from tabulate import tabulate
 
-# Testando 
-
 load_dotenv()
 
-config = {
-      'user': os.getenv("USER"),
-      'password': os.getenv("PASSWORD"),
-      'host': os.getenv("HOST"),
-      'database': os.getenv("DATABASE"),
-      'port': int(os.getenv("PORT", 3306))
-    }
+MODO_SIMULACAO = False  # ⬅ Altere para False para usar valores reais
 
-def inserir_dados(porcentagem, memoria_usada_GB, disco_percent):
+CPU_SIMULADA = 100.0           # CPU 100%
+MEMORIA_SIMULADA_GB = 20.0     # memória usada simulada
+DISCO_SIMULADO_GB = 150.0      # disco usado simulado
+# -------------------------------
+
+config = {
+    'user': os.getenv("DB_USER"),
+    'password': os.getenv("DB_PASSWORD"),
+    'host': os.getenv("DB_HOST"),
+    'database': os.getenv("DB_DATABASE"),
+    'port': int(os.getenv("PORT", 3306)),
+    'connection_timeout': 30
+}
+
+maquinas_simuladas = [
+    {
+        'id_maquina': 1,
+        'componentes': {
+            'CPU': 3,
+            'Memoria': 1,
+            'Disco': 2
+        }
+    },
+]
+
+def inserir_dados_e_alertas(maquina, cpu, memoria, disco):
     try:
         db = connect(**config)
-        if db.is_connected():
-            with db.cursor() as cursor:
+        with db.cursor(dictionary=True) as cursor:
+            dt = datetime.datetime.now()
 
-                # CPU
-                cursor.execute("""
-                    INSERT INTO safeclass.captura (fkComponente, registro, dtCaptura)
-                    VALUES (%s, %s, %s)
-                """, (3, porcentagem, datetime.datetime.now()))
+            registros = {
+                'CPU': cpu,
+                'Memoria': memoria,
+                'Disco': disco
+            }
 
-                # Memória
-                cursor.execute("""
-                    INSERT INTO safeclass.captura (fkComponente, registro, dtCaptura)
-                    VALUES (%s, %s, %s)
-                """, (1, memoria_usada_GB, datetime.datetime.now()))
+            ids_captura = {}
 
-                # Disco
-                cursor.execute("""
-                    INSERT INTO safeclass.captura (fkComponente, registro, dtCaptura)
-                    VALUES (%s, %s, %s)
-                """, (2, disco_percent, datetime.datetime.now()))
+            # Inserir capturas
+            for comp_nome, valor in registros.items():
+                fk_componente = maquina['componentes'][comp_nome]
+                cursor.execute(
+                    "INSERT INTO Captura (fkComponente, registro, dtCaptura) VALUES (%s, %s, %s)",
+                    (fk_componente, valor, dt)
+                )
+                ids_captura[comp_nome] = cursor.lastrowid
 
+            db.commit()
+
+            # Buscar parâmetros
+            cursor.execute(
+                """SELECT idParametro, fkComponente, nivel, minimo, maximo 
+                   FROM Parametro 
+                   WHERE fkComponente IN (%s, %s, %s)""",
+                tuple(maquina['componentes'].values())
+            )
+            parametros = cursor.fetchall()
+            
+            # Buscar formatação dos componentes
+            cursor.execute(
+                "SELECT idComponente, formatacao FROM Componente WHERE idComponente IN (%s, %s, %s)",
+                tuple(maquina['componentes'].values())
+            )
+
+            formatacoes = cursor.fetchall()
+
+            map_format = {f["idComponente"]: f["formatacao"] for f in formatacoes}
+
+            alertas = []
+            id_para_nome = {v: k for k, v in maquina['componentes'].items()}
+
+            for param in parametros:
+                comp_nome = id_para_nome[param['fkComponente']]
+                valor_atual = float(registros[comp_nome])
+                minimo = float(param['minimo'])
+                maximo = float(param['maximo'])
+
+                if minimo <= valor_atual <= maximo:
+                    fkCaptura = ids_captura[comp_nome]
+                    alertas.append((param['idParametro'], fkCaptura, comp_nome, param['nivel']))
+
+            mensagens_slack = []
+
+            if alertas:
+                for fkParametro, fkCaptura, comp_nome, nivel in alertas:
+                    
+                    valor_atual = registros[comp_nome]
+
+                    formatacao = map_format[maquina["componentes"][comp_nome]]
+
+                    captura_formatada = f"{round(valor_atual, 1)}{formatacao}"
+
+                    mensagem = f"Uso de {comp_nome} a {captura_formatada}"
+
+                    cursor.execute(
+                        "INSERT INTO Alerta (fkParametro, fkCaptura, enviado, mensagem) VALUES (%s, %s, 0, %s)",
+                        (fkParametro, fkCaptura, mensagem)
+                    )
+
+                    cursor.execute(
+                        "UPDATE Maquina SET status = %s WHERE idMaquina = %s",
+                        (nivel, maquina['id_maquina'])
+                    )
+
+                    mensagens_slack.append(
+                        f":{nivel.lower()}: Alerta detectado!\n"
+                        f"│ Máquina: {maquina['id_maquina']}\n"
+                        f"│ Componente: {comp_nome}\n"
+                        f"│ Valor atual: {registros[comp_nome]:.2f}\n"
+                        f"│ Nível: {nivel}\n"
+                        f"│ Hora: {dt.strftime('%H:%M:%S')}\n"
+                        f"│ Motivo: {nivel} atingido"
+                    )
                 db.commit()
+                print(f"⚠ Alertas gerados: {len(alertas)}")
+            else:
+                cursor.execute(
+                    "UPDATE Maquina SET status = %s WHERE idMaquina = %s",
+                    ("Estável", maquina['id_maquina'])
+                )
+                db.commit()
+                print("✔ Sem alertas no momento")
 
-        db.close()
-        print("✅ Inserções concluídas!")
+            return mensagens_slack
 
     except Error as e:
-        print('❌ Erro ao conectar ou inserir no MySQL:', e)
+        print("❌ Erro:", e)
+        return []
+    finally:
+        try:
+            db.close()
+        except:
+            pass
 
+
+# ============================================
+# 🚀 LOOP PRINCIPAL
+# ============================================
 while True:
-     # Hostname da máquina
-    dono_maquina = platform.node()
+    hostname = platform.node()
 
-    # Dados de memória ram
-    memoria = p.virtual_memory()  
-    memoria_total_GB = memoria.total / (1024**3) 
-    memoria_GB_free = memoria.available / (1024**3) 
-    memoria_usada_GB = memoria_total_GB - memoria_GB_free 
-    memoria_formatada_em_uso = f'{memoria_usada_GB:.2f}'
+    # -------------------------
+    # MODO SIMULAÇÃO ATIVO
+    # -------------------------
+    if MODO_SIMULACAO:
+        cpu_percent = CPU_SIMULADA
+        memoria_usada_GB = MEMORIA_SIMULADA_GB
+        disco_usado_GB = DISCO_SIMULADO_GB
 
+    # -------------------------
+    # MODO REAL
+    # -------------------------
+    else:
+        cpu_percent = p.cpu_percent(interval=1)
+        memoria = p.virtual_memory()
+        memoria_usada_GB = (memoria.total - memoria.available) / (1024 ** 3)
+        disco = p.disk_usage("/")
+        disco_usado_GB = disco.used / (1024 ** 3)
 
-    # Dados do disco
-    disco_objeto = p.disk_usage('/')
-    disco_percent = disco_objeto.percent  
-
-
-    # Dados de cpu
-    porcentagem = p.cpu_percent(interval=1, percpu=False)
-
-    captura = [
-        ["Hostname", dono_maquina],
-        ["CPU % (USO)", f"{porcentagem}%"],
-        ["Memória em Uso (GB)", f"{memoria_formatada_em_uso} GB"],
-        ["Disco % (USO)", f"{disco_percent:.1f}%"]
+    # Exibição
+    captura_display = [
+        ["Hostname", hostname],
+        ["CPU %", f"{cpu_percent:.1f}%"],
+        ["Memória usada (GB)", f"{memoria_usada_GB:.2f} GB"],
+        ["Disco usado (GB)", f"{disco_usado_GB:.2f} GB"]
     ]
 
-    print("""
-    ╔════════════════════════════════════════════╗
-    ║                                            ║
-    ║     ✅ DADOS INSERIDOS COM SUCESSO!       ║
-    ║                                            ║
-    ║   Os dados foram gravados no banco de      ║
-    ║  forma segura e o sistema foi atualizado.  ║
-    ╚════════════════════════════════════════════╝
-    """)
+    print(tabulate(captura_display, headers=["Componente", "Valor"], tablefmt="fancy_grid"))
 
+    # Inserir dados e gerar alertas
+    for maquina in maquinas_simuladas:
+        mensagens_slack = inserir_dados_e_alertas(maquina, cpu_percent, memoria_usada_GB, disco_usado_GB)
 
-    print(tabulate(captura, headers=["Componente", "Valor"], tablefmt="fancy_grid"))
-    
-    inserir_dados(porcentagem, memoria_usada_GB, disco_percent)
-
+        for msg in mensagens_slack:
+            print("\n💬 Mensagem para Slack:\n", msg)
 
     time.sleep(1)
