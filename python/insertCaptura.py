@@ -7,6 +7,8 @@ import time
 import platform
 from tabulate import tabulate
 
+# Testando 
+
 load_dotenv()
 
 config = {
